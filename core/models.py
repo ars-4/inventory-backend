@@ -38,7 +38,7 @@ class OrderProduct(BaseModel):
 class Order(BaseModel):
     customer_name = models.CharField(max_length=244, null=True, default='Walking Customer')
     description = models.TextField(null=True)
-    products = models.ForeignKey(OrderProduct, on_delete=models.CASCADE)
+    products = models.ManyToManyField(OrderProduct)
     sale = models.CharField(max_length=244, null=True)
     purchase = models.CharField(max_length=244, null=True)
     def __str__(self):

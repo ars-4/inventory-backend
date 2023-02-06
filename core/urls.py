@@ -7,5 +7,7 @@ router = DefaultRouter()
 router.register('products', views.ProductViewSet, basename='ProductsPage')
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
+
+    path('product/stock/', views.stock_product, name='ProductStockInOut')
 ]
