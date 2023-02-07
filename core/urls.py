@@ -5,6 +5,7 @@ from core import views
 router = DefaultRouter()
 
 router.register('products', views.ProductViewSet, basename='ProductsPage')
+router.register('order_products', views.OrderProductViewSet, basename='OrderProductsPage')
 
 urlpatterns = [
     path('', include(router.urls)),
