@@ -1,4 +1,4 @@
-from core.models import Balance
+from core.models import Balance, OrderProduct, Product
 
 def get_total_cash():
     cashed_in_balance_objects = Balance.objects.filter(balance='cashed')
@@ -52,3 +52,20 @@ def generate_profit(bill):
         bill=str(bill),
         balance="profit",
     ).save()
+
+
+def generate_from_order_product(product_id, quantity):
+    product = Product.objects.get(id=product_id)
+    sale_bill = int(product.sale_price) * int(quantity)
+    purchase_bill = int(product.purchase_price) * int(quantity)
+    order_product = OrderProduct.objects.create(
+        product=product,
+        quantity=quantity,
+        sale_bill=str(sale_bill),
+        purchase_bill=str(purchase_bill)
+    )
+    generate_sale(sale_bill)
+    generate_profit(sale_bill-purchase_bill)
+    equalize(sale_bill, purchase_bill)
+    order_product.save()
+    return order_product
