@@ -3,6 +3,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from core.filters import BalanceFilter
 from core.models import Product, OrderProduct, Order, Balance
 from core.serializers import ProductSerializer, OrderProductSerializer, OrderSerializer, BalanceSerializer
 from core.utils import generate_from_order_product, generate_profit, generate_expense, generate_sale, get_total_cash, equalize
@@ -186,3 +187,10 @@ class OrderViewSet(ModelViewSet):
             })
 
 
+
+
+class BalanceViewSet(ModelViewSet):
+    queryset = Balance.objects.all()
+    serializer_class = BalanceSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = '__all__'
