@@ -45,14 +45,14 @@ def get_token(request):
 class PersonViewSet(ModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
-    filterset_fields = '__all__'
+    filterset_fields = ['user__groups', 'first_name', 'last_name', 'date_created']
 
     def get_queryset(self):
-        queryset = Person.objects.filter(user__groups=Group.objects.get(id=2))
-        return queryset
+        # queryset = Person.objects.filter(user__groups=Group.objects.get(id=2))
+        return self.queryset
 
 
     def create(self, request):
@@ -71,7 +71,7 @@ class PersonViewSet(ModelViewSet):
             )
             try:
                 user.save()
-                user.groups.add(Group.objects.get(id=2))
+                user.groups.add(Group.objects.get(id=int(data.get('role'))))
                 person = Person.objects.create(
                     user=user,
                     first_name=data.get('first_name'),
@@ -243,7 +243,7 @@ class OrderViewSet(ModelViewSet):
     def create(self, request):
         data = request.data
         order_products = data.get("order_products")
-        user = Person.objects.get(user=request.user)
+        user = Person.objects.get(user__username=data.get('customer_name'))
         description = ""
         product_existence = True
         sale = 0

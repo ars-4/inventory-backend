@@ -55,6 +55,7 @@ def generate_profit(bill):
 
 
 def generate_from_order_product(product_id, quantity):
+    cash_in_hand = get_total_cash()
     product = Product.objects.get(id=product_id)
     sale_bill = int(product.sale_price) * int(quantity)
     purchase_bill = int(product.purchase_price) * int(quantity)
@@ -66,6 +67,6 @@ def generate_from_order_product(product_id, quantity):
     )
     generate_sale(sale_bill)
     generate_profit(sale_bill-purchase_bill)
-    equalize(sale_bill, purchase_bill)
+    equalize(cash_in_hand, purchase_bill)
     order_product.save()
     return order_product
