@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class BaseModel(models.Model):
@@ -6,6 +7,16 @@ class BaseModel(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     class Meta:
         abstract = True
+
+
+class Person(BaseModel):
+    first_name = models.CharField(max_length=244, null=True)
+    last_name = models.CharField(max_length=244, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.CharField(max_length=244, null=True)
+    address = models.CharField(max_length=244, null=True)
+    def __str__(self):
+        return self.user.username
 
 
 class Product(BaseModel):
@@ -36,7 +47,7 @@ class OrderProduct(BaseModel):
 
 
 class Order(BaseModel):
-    customer_name = models.CharField(max_length=244, null=True, default='Walking Customer')
+    customer_name = models.ForeignKey(Person, on_delete=models.CASCADE)
     description = models.TextField(null=True)
     products = models.ManyToManyField(OrderProduct)
     sale = models.CharField(max_length=244, null=True)

@@ -1,5 +1,19 @@
-from core.models import Product, OrderProduct, Order, Balance
+from core.models import Product, OrderProduct, Order, Balance, Person
 from rest_framework import serializers
+from django.contrib.auth.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username']
+
+
+class PersonSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = Person
+        fields = ['id', 'first_name', 'last_name', 'email', 'address', 'user', 'date_created', 'date_updated']
 
 
 class ProductSerializer(serializers.ModelSerializer):
