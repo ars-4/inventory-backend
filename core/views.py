@@ -1,22 +1,57 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.models import User
 from rest_framework import filters
+from rest_framework.permissions import IsAuthenticated
 from core.filters import BalanceFilter
-from core.models import Product, OrderProduct, Order, Balance
-from core.serializers import ProductSerializer, OrderProductSerializer, OrderSerializer, BalanceSerializer
+from core.models import Product, OrderProduct, Order, Balance, Person
+from core.serializers import ProductSerializer, OrderProductSerializer, OrderSerializer, BalanceSerializer, PersonSerializer
 from core.utils import generate_from_order_product, generate_profit, generate_expense, generate_sale, get_total_cash, equalize
+from core.auth import get_or_create_token
+
+
+@api_view(['POST'])
+def get_token(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    try:
+        user = User.objects.get(username=username)
+        if user.check_password(password):
+            person = Person.objects.get(user=user)
+            serializer = PersonSerializer(person, many=False)
+            token = get_or_create_token(user)
+            type = user.groups.all()[0]
+            return Response({
+                "error":"false",
+                "data": serializer.data,
+                "token": str(token),
+                "type": str(type)
+            })
+        else:
+            return Response({
+                "error":"true",
+                "data": "User passsword is wrong"
+            })
+    except Exception as err:
+        return Response({
+            "error":"true",
+            "data":str(err)
+        })
+    
 
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
     filterset_fields = '__all__'
 
     def get_queryset(self):
+        # print(self.request.user.groups.all()[0])
         try:
             return Product.objects.all()
         except:
@@ -38,6 +73,7 @@ class ProductViewSet(ModelViewSet):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def stock_product(request):
     data = request.data
     try:
@@ -92,6 +128,7 @@ def stock_product(request):
 class OrderProductViewSet(ModelViewSet):
     queryset = OrderProduct.objects.all()
     serializer_class = OrderProductSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
     filterset_fields = '__all__'
@@ -130,6 +167,7 @@ class OrderProductViewSet(ModelViewSet):
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
     filterset_fields = '__all__'
@@ -143,12 +181,13 @@ class OrderViewSet(ModelViewSet):
     def create(self, request):
         data = request.data
         order_products = data.get("order_products")
+        user = Person.objects.get(user=request.user)
         description = ""
         product_existence = True
         sale = 0
         purchase = 0
         order = Order.objects.create(
-            customer_name=data.get('customer_name')
+            customer_name=user
         )
         for product_order in order_products:
             try:
@@ -192,5 +231,6 @@ class OrderViewSet(ModelViewSet):
 class BalanceViewSet(ModelViewSet):
     queryset = Balance.objects.all()
     serializer_class = BalanceSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = '__all__'

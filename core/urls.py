@@ -10,6 +10,8 @@ router.register('orders', views.OrderViewSet, basename='OrdersPage')
 router.register('balances', views.BalanceViewSet, basename='BalancesPage')
 
 urlpatterns = [
+    path('auth/', views.get_token, name='GetTokenView'),
+
     path('', include(router.urls)),
 
     path('product/stock/', views.stock_product, name='ProductStockInOut')
