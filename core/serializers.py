@@ -35,7 +35,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class BalanceSerializer(serializers.ModelSerializer):
-    date_created = serializers.DateTimeField('%Y-%m-%d,%H:%M:%S')
+    date_created = serializers.DateTimeField('%Y-%m-%d')
     date_updated = serializers.DateTimeField('%Y-%m-%d,%H:%M:%S')
     class Meta:
         model = Balance

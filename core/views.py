@@ -2,10 +2,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
-from core.filters import BalanceFilter
+# from core.filters import BalanceFilter
 from core.models import Product, OrderProduct, Order, Balance, Person
 from core.serializers import ProductSerializer, OrderProductSerializer, OrderSerializer, BalanceSerializer, PersonSerializer
 from core.utils import generate_from_order_product, generate_profit, generate_expense, generate_sale, get_total_cash, equalize
@@ -42,6 +42,62 @@ def get_token(request):
     
 
 
+class PersonViewSet(ModelViewSet):
+    queryset = Person.objects.all()
+    serializer_class = PersonSerializer
+    # permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = '__all__'
+    filterset_fields = '__all__'
+
+    def get_queryset(self):
+        queryset = Person.objects.filter(user__groups=Group.objects.get(id=2))
+        return queryset
+
+
+    def create(self, request):
+        data = request.data
+        user_exist = False
+        for user in User.objects.all():
+            if user.username == data.get('username'):
+                user_exist = True
+        
+        if user_exist == False:
+
+            user = User.objects.create_user(
+                username=data.get('username'),
+                email=data.get('email'),
+                password=data.get('password')
+            )
+            try:
+                user.save()
+                user.groups.add(Group.objects.get(id=2))
+                person = Person.objects.create(
+                    user=user,
+                    first_name=data.get('first_name'),
+                    last_name=data.get('last_name'),
+                    email=user.email,
+                    address=data.get('address')
+                )
+                person.save()
+                serializer = PersonSerializer(person, many=False)
+                return Response({
+                    "error":"false",
+                    "data":serializer.data
+                })
+            except Exception as err:
+                return Response({
+                    "error":"false",
+                    "data":str(err)
+                })
+        else:
+            return Response({
+                    "error":"false",
+                    "data":"User already exists"
+                })
+
+
+
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -59,16 +115,22 @@ class ProductViewSet(ModelViewSet):
 
     def create(self, request):
         data = request.data
-        serializer = ProductSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "error": "false",
-                "data": serializer.data
-            })
+        if request.user.groups.all()[0] == Group.objects.get(id=1):
+            serializer = ProductSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "error": "false",
+                    "data": serializer.data
+                })
+            else:
+                return Response({
+                    "error": "true"
+                })
         else:
             return Response({
-                "error": "true"
+                "error":"true",
+                "data":"User must be admin"
             })
 
 
@@ -234,3 +296,20 @@ class BalanceViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = '__all__'
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_balances_by_date(request):
+    params = request.query_params
+    balances = Balance.objects.all()
+
+    if params.get('start') is not None and params.get('end') is not None:
+        balances = Balance.objects.filter(date_created__date__lte=params.get('end'), date_created__date__gte=params.get('start'))
+
+    serializer = BalanceSerializer(balances, many=True)
+    print(balances)
+    return Response({
+        "error":"false",
+        "data": serializer.data
+    })
