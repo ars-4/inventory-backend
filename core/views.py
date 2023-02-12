@@ -335,7 +335,8 @@ def delete_order(request):
         current_profit = current_profit - int(order.sale)
         equal_amount = current_profit / profits.count()
         for profit in profits:
-            profit.bill = equal_amount
+            profit.bill = str(equal_amount)
+            profit.save()
         order.delete()
         return Response({
             "error":"false",
