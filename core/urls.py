@@ -16,5 +16,6 @@ urlpatterns = [
     path('', include(router.urls)),
 
     path('product/stock/', views.stock_product, name='ProductStockInOut'),
+    path('order/', views.delete_order, name='DeleteOrder'),
     path('balance/', views.get_balances_by_date, name='GetBalancesByDate')
 ]

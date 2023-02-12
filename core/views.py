@@ -147,43 +147,52 @@ def stock_product(request):
         serializer = ProductSerializer(product, many=False)
         cash_in_hand = get_total_cash()
 
+        if cash_in_hand < int(product.purchase_price) * stock:
+            return Response({
+                "error":"true",
+                "data":"Cuurent cash must be equal or greater then product purchase price"
+            })
+        
+        else:
+            if method == 'stock_in':
+                product.stock = str(int(product.stock) + stock)
+                product.save()
+                msg = "Stocked In"
+                expense = stock * int(product.purchase_price)
+                generate_expense(expense)
+                equalize(cash_in_hand, expense)
+            
+
+            elif method == 'stock_out':
+                product.stock = str(int(product.stock) - stock)
+                product.save()
+                msg = "Stocked Out"
+                sale = stock * int(product.sale_price)
+                expense = stock * int(product.purchase_price)
+                profit = sale - expense
+                generate_profit(profit)
+                equalize(cash_in_hand, expense)
+                generate_sale(sale)
+                
+            
+            else:
+                return Response({
+                    "error": "true",
+                    "message": "Method type not found, try \'stock_in\' or \'stock_out\'"
+                })
+
+            return Response({
+                "error": "false",
+                "message": msg,
+                "data": serializer.data
+            })
+
+
     except Exception as error:
         return Response({
             "error": "true",
             "message": str(error)
         })
-    if method == 'stock_in':
-        product.stock = str(int(product.stock) + stock)
-        product.save()
-        msg = "Stocked In"
-        expense = stock * int(product.purchase_price)
-        generate_expense(expense)
-        equalize(cash_in_hand, expense)
-    
-
-    elif method == 'stock_out':
-        product.stock = str(int(product.stock) - stock)
-        product.save()
-        msg = "Stocked Out"
-        sale = stock * int(product.sale_price)
-        expense = stock * int(product.purchase_price)
-        profit = sale - expense
-        generate_profit(profit)
-        equalize(cash_in_hand, expense)
-        generate_sale(sale)
-        
-    
-    else:
-        return Response({
-            "error": "true",
-            "message": "Method type not found, try \'stock_in\' or \'stock_out\'"
-        })
-
-    return Response({
-        "error": "false",
-        "message": msg,
-        "data": serializer.data
-    })
 
 
 
@@ -255,14 +264,24 @@ class OrderViewSet(ModelViewSet):
             try:
                 prod = Product.objects.get(id=int(product_order[0]))
                 qty = product_order[1]
-                order_product = generate_from_order_product(prod.id, qty)
-                sale = sale + int(order_product.sale_bill)
-                purchase = purchase + int(order_product.purchase_bill)
-                description = description + " " + qty + " " + prod.title + ",\n"
-                order.products.add(order_product)
-            except Exception:
+                cash_in_hand = get_total_cash()
+                if cash_in_hand < int(prod.purchase_price) * int(qty):
+                    return Response({
+                        "error":"true",
+                        "data":"Current cash balance must be greater or equal to purchase bill"
+                    })
+                else:
+                    order_product = generate_from_order_product(prod.id, qty)
+                    sale = sale + int(order_product.sale_bill)
+                    purchase = purchase + int(order_product.purchase_bill)
+                    description = description + " " + qty + " " + prod.title + ",\n"
+                    order.products.add(order_product)
+            except Exception as err:
                 product_existence = False
-                break;
+                return Response({
+                    "error":"true",
+                    "data":str(err)
+                })
         
         order.description = description
         order.sale = str(sale)
@@ -287,7 +306,46 @@ class OrderViewSet(ModelViewSet):
                 "data": str(error)
             })
 
+    def destroy(self):
+        instance = self.get_object()
+        print(instance)
+        return Response({
+            "data":"yes"
+        })
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def delete_order(request):
+    params = request.query_params
+    if params.get('pk') is not None:
+        order_id = params.get('pk')
+        order = Order.objects.get(id=int(order_id))
+        profits = Balance.objects.filter(balance='profit')
+        current_profit = 0
+        for product in order.products.all():
+            prod = Product.objects.get(id=int(product.product.id))
+            prod.stock = int(prod.stock) + int(product.quantity)
+            prod.save()
+            product.delete()
+        
+        for profit in profits:
+            current_profit = current_profit + int(profit.bill)
+        
+        current_profit = current_profit - int(order.sale)
+        equal_amount = current_profit / profits.count()
+        for profit in profits:
+            profit.bill = equal_amount
+        order.delete()
+        return Response({
+            "error":"false",
+            "data":"Order returned successfully"
+        })
+    else:
+        return Response({
+            "error":"true",
+            "data":"No primary key found"
+        })
 
 
 class BalanceViewSet(ModelViewSet):
