@@ -199,7 +199,7 @@ def stock_product(request):
 class OrderProductViewSet(ModelViewSet):
     queryset = OrderProduct.objects.all()
     serializer_class = OrderProductSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
     filterset_fields = '__all__'
@@ -238,7 +238,7 @@ class OrderProductViewSet(ModelViewSet):
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = '__all__'
     filterset_fields = '__all__'
@@ -264,10 +264,12 @@ class OrderViewSet(ModelViewSet):
             prod = Product.objects.get(id=int(product_order[0]))
             qty = product_order[1]
             cash_in_hand = get_total_cash()
-            if cash_in_hand < int(prod.purchase_price) * int(qty):
+            # if cash_in_hand < int(prod.purchase_price) * int(qty):
+            if int(prod.stock) < int(qty):
                 return Response({
                     "error":"true",
-                    "data":"Current cash balance must be greater or equal to purchase bill"
+                    # "data":"Current cash balance must be greater or equal to purchase bill"
+                    "data":"Current product stock must be greater or equal to order\'s product quantity"
                 })
             else:
                 order_product = generate_from_order_product(prod.id, qty)

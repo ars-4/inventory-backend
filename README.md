@@ -1,6 +1,6 @@
 # Stock Management System
 
-##### Backend for stock management system by Shahzaib Durrani and ARS. Made entirely on Python and VueJS
+##### Backend for stock management system. Made entirely on Python and VueJS
 
 
 <br>
