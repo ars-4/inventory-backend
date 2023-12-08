@@ -9,7 +9,7 @@ SECRET_KEY = 'django-insecure-j8)4n(&f!wb33q2apu36uxx(pl%_5d1blu%f)$e1+vk_n)mzmc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -26,7 +26,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
-    'corsheaders'
+    'corsheaders',
+    'channels',
+    'channels_postgres'
+
 ]
 
 REST_FRAMEWORK = {
@@ -71,12 +74,25 @@ WSGI_APPLICATION = 'StockBackend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+DATABASE_CONFIG = {
+    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    'NAME': 'webchat',
+    'USER': 'webchat',
+    'PASSWORD': 'webchat',
+    'HOST': 'localhost',
+    'PORT': '5432',
 }
+
+DATABASES = {
+    'default': DATABASE_CONFIG
+}
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
+        'CONFIG': DATABASE_CONFIG
+    },
+}
+
 
 
 # Password validation

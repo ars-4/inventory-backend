@@ -47,13 +47,14 @@ class OrderProduct(BaseModel):
 
 
 class Order(BaseModel):
-    customer_name = models.ForeignKey(Person, on_delete=models.CASCADE)
+    customer_name = models.ForeignKey(Person, on_delete=models.CASCADE, related_name='customer_name')
     description = models.TextField(null=True)
     products = models.ManyToManyField(OrderProduct)
     sale = models.CharField(max_length=244, null=True)
     purchase = models.CharField(max_length=244, null=True)
+    order_creator = models.ForeignKey(Person, on_delete=models.CASCADE, related_name='order_creator', default=1)
     def __str__(self):
-        return self.customer_name
+        return self.customer_name.user.username
 
 
 class Balance(BaseModel):

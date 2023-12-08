@@ -1,5 +1,6 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter, SimpleRouter
+from .consumer import OrderConsumer
 from core import views
 
 router = DefaultRouter()
@@ -18,4 +19,8 @@ urlpatterns = [
     path('product/stock/', views.stock_product, name='ProductStockInOut'),
     path('order/', views.delete_order, name='DeleteOrder'),
     path('balance/', views.get_balances_by_date, name='GetBalancesByDate')
+]
+
+websocket_urlpatterns = [
+    re_path(r"ws/chats/(?P<room_name>\w+)/$", OrderConsumer.as_asgi()),
 ]
