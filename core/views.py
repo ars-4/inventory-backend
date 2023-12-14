@@ -258,7 +258,8 @@ class OrderViewSet(ModelViewSet):
         sale = 0
         purchase = 0
         order = Order.objects.create(
-            customer_name=user
+            customer_name=user,
+            order_creator=Person.objects.get(user=request.user)
         )
         for product_order in order_products:
             prod = Product.objects.get(id=int(product_order[0]))
@@ -304,39 +305,45 @@ def delete_order(request):
     if params.get('pk') is not None:
         order_id = params.get('pk')
         order = Order.objects.get(id=int(order_id))
-        profits = Balance.objects.filter(balance='profit')
-        sales = Balance.objects.filter(balance='sale')
         current_profit = 0
         current_sale = 0
+        current_total_expense = 0
+        expense_to_be_subtracted = 0
+        current_expense_objects = Balance.objects.filter(balance='expense')
+
         for product in order.products.all():
             prod = Product.objects.get(id=int(product.product.id))
             prod.stock = int(prod.stock) + int(product.quantity)
+
+            balances = Balance.objects.filter(special_field=f"order_product_id_{product.id}")
+            for balance in balances:
+                if(balance.balance == 'profit'):
+                    current_profit = current_profit + int(balance.bill)
+                if(balance.balance == 'sale'):
+                    current_sale = current_sale + int(balance.bill)
+                balance.delete()
             prod.save()
             product.delete()
-        
-        for profit in profits:
-            current_profit = current_profit + int(profit.bill)
-        for sale in sales:
-            current_sale = current_sale + int(sale.bill)
-        
-        temp_profit = int(order.sale) - int(order.purchase)
-        current_profit = current_profit - temp_profit
-        if current_profit == 0:
-            print("profit is in loss")
-        else:
-            equal_amount = current_profit / profits.count()
-            for profit in profits:
-                profit.bill = str(equal_amount)
-                profit.save()
 
-        current_sale = current_sale - int(order.sale)
-        if current_sale == 0:
-            print("No sales")
-        else:
-            equal_sale_amount = current_sale / sales.count()
-            for sale in sales:
-                sale.bill = str(equal_sale_amount)
-                sale.save()
+        expense_to_be_subtracted = int(order.purchase)
+        print(f"{product.product.title} {expense_to_be_subtracted} += {product.purchase_bill}")
+        for current_expense_object in current_expense_objects:
+            current_total_expense += int(current_expense_object.bill)
+        current_total_expense -= expense_to_be_subtracted
+        equal_expense_amount = current_total_expense / current_expense_objects.count()
+        for expense in current_expense_objects:
+            balance = Balance.objects.get(id=expense.id)
+            balance.bill = str(equal_expense_amount)
+            balance.save()
+
+        cash_in_hand = int(current_sale)
+        Balance.objects.create(
+            bill=str(cash_in_hand),
+            balance='cashed',
+            special_field=f"order_deleted_{order.id}",
+            title='cashed_in_after_order_deletion',
+            description='cashed_in_after_order_deletion'
+        ).save()
 
         order.delete()
         return Response({
