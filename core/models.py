@@ -63,5 +63,6 @@ class Balance(BaseModel):
     bill = models.CharField(max_length=244, null=True)
     balance_type_choices = (('profit', 'profit'), ('expense', 'expense'), ('sale', 'sale'), ('cashed', 'cashed'))
     balance = models.CharField(max_length=10, null=True, choices=balance_type_choices)
+    special_field = models.CharField(max_length=244, null=True, default="null")
     def __str__(self):
         return self.title
